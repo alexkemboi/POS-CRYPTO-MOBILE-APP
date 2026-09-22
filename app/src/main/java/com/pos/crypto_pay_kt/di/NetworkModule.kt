@@ -1,6 +1,9 @@
 package com.pos.crypto_pay_kt.di
 
 import com.pos.crypto_pay_kt.BuildConfig
+import com.pos.crypto_pay_kt.data.local.security.SecureSessionStorage
+import com.pos.crypto_pay_kt.data.remote.api.AuthApi
+import com.pos.crypto_pay_kt.data.remote.api.PaymentApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -10,6 +13,7 @@ import javax.inject.Singleton
 import kotlinx.serialization.json.Json as KotlinJson
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.Interceptor
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
@@ -39,11 +43,23 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(
         loggingInterceptor: HttpLoggingInterceptor,
+        secureSessionStorage: SecureSessionStorage,
     ): OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(10, TimeUnit.MINUTES)
         .writeTimeout(10, TimeUnit.MINUTES)
         .callTimeout(10, TimeUnit.MINUTES)
+        .addInterceptor(
+            Interceptor { chain ->
+                val token = secureSessionStorage.read(SecureSessionStorage.ACCESS_TOKEN)
+                val request = chain.request().newBuilder().apply {
+                    if (!token.isNullOrBlank()) {
+                        header("Authorization", "Bearer $token")
+                    }
+                }.build()
+                chain.proceed(request)
+            },
+        )
         .addInterceptor(loggingInterceptor)
         .build()
 
@@ -59,4 +75,12 @@ object NetworkModule {
             json.asConverterFactory("application/json".toMediaType()),
         )
         .build()
+
+    @Provides
+    @Singleton
+    fun provideAuthApi(retrofit: Retrofit): AuthApi = retrofit.create(AuthApi::class.java)
+
+    @Provides
+    @Singleton
+    fun providePaymentApi(retrofit: Retrofit): PaymentApi = retrofit.create(PaymentApi::class.java)
 }
