@@ -2,6 +2,8 @@ package com.pos.crypto_pay_kt.presentation.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pos.crypto_pay_kt.BuildConfig
+import com.pos.crypto_pay_kt.domain.repository.SessionRepository
 import com.pos.crypto_pay_kt.domain.usecase.LoginUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -14,6 +16,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val login: LoginUseCase,
+    private val sessionRepository: SessionRepository,
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = mutableUiState.asStateFlow()
@@ -29,7 +32,17 @@ class LoginViewModel @Inject constructor(
         if (pin.length != PIN_LENGTH || mutableUiState.value.isLoading) return
         viewModelScope.launch {
             mutableUiState.update { it.copy(isLoading = true, errorMessage = null) }
-            runCatching { login(pin) }
+            runCatching {
+                if (BuildConfig.DEBUG && pin == TEST_PIN) {
+                    sessionRepository.saveSession(
+                        accessToken = TEST_ACCESS_TOKEN,
+                        agentName = "Test Merchant",
+                        role = "UI Preview",
+                    )
+                } else {
+                    login(pin)
+                }
+            }
                 .onFailure { error ->
                     mutableUiState.update {
                         it.copy(
@@ -44,6 +57,8 @@ class LoginViewModel @Inject constructor(
 
     private companion object {
         const val PIN_LENGTH = 4
+        const val TEST_PIN = "1111"
+        const val TEST_ACCESS_TOKEN = "debug-ui-preview-session"
     }
 }
 
