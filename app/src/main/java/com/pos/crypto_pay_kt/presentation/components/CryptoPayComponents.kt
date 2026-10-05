@@ -75,7 +75,7 @@ fun CryptoPayField(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(8.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            color = MaterialTheme.colorScheme.surface,
             border = BorderStroke(if (focused || isError) 2.dp else 1.dp, borderColor),
         ) {
             Row(
@@ -86,14 +86,14 @@ fun CryptoPayField(
                     Surface(
                         modifier = Modifier.size(34.dp),
                         shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer,
+                        color = MaterialTheme.colorScheme.surfaceContainer,
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = leadingIcon,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
-                                tint = MaterialTheme.colorScheme.primary,
+                            tint = MaterialTheme.colorScheme.onSurface,
                             )
                         }
                     }
